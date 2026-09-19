@@ -49,10 +49,17 @@ This only works in a browser, because JavaScript fetches the content. Programs t
 1. Sign in at dash.cloudflare.com (a free account is enough).
 2. Open Workers & Pages, choose Create, then Create Worker. Give it a name, for example `raw`, then Deploy.
 3. Choose Edit code, delete the contents, paste `worker.js`, then Deploy.
-4. The link becomes `https://raw.ACCOUNT.workers.dev/Guess-the-Slapper`.
-5. Optional: set `RAW_HOST` in `index.html` to the Worker address so the Copy button copies the Worker link.
+4. Open the Worker's Settings → Variables and Secrets and add two variables:
+   - `BASE` (type Text): `https://raw.githubusercontent.com/Scripting-404/Script/refs/heads/main/`
+   - `LINKS` (type JSON): `{"Guess-the-Slapper": "Guess-the-Slapper", "test": "test"}`
 
-The Worker's link list is the `LINKS` variable at the top of `worker.js`. To add a link, add one line there and deploy again. `links.json` is only used by the site, so add the link there too if you want it in the page list. The free Cloudflare plan is limited to about 100,000 requests per day.
+   Save and deploy.
+5. The link becomes `https://raw.ACCOUNT.workers.dev/Guess-the-Slapper`.
+6. Optional: set `RAW_HOST` in `index.html` to the Worker address so the Copy button copies the Worker link.
+
+The raw links live in the Worker's variables, not in the code. To add a link, add one entry to `LINKS` and deploy; the code stays untouched. Each entry is `"slug": "file-name"` (joined to `BASE`) or `"slug": "https://raw.githubusercontent.com/..."` (a full URL). `BASE` is optional when every entry is a full URL. If you deploy with Wrangler instead, put both under `[vars]` in `wrangler.toml`.
+
+`links.json` is only used by the site, so add the link there too if you want it in the page list. The free Cloudflare plan is limited to about 100,000 requests per day.
 
 ## Row animations
 
