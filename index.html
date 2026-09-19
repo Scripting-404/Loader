@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en" data-state="idle">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#060F24">
+<meta name="base" content="/Loader/">
+<title>raw · shortened GitHub raw links</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800;900&family=Chivo+Mono:wght@400;600&family=Familjen+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#060F24; --panel:#0C1D3D; --panel2:#102850; --line:#38609A; --soft:#93AFD6; --text:#E3EDFA;
+  --blue:#4C8DFF; --green:#35E0A1; --yellow:#FFC93C; --red:#FF5A5F;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --body:"Familjen Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Chivo Mono",ui-monospace,Menlo,Consolas,monospace;
+  /* machine state: standby (blue) */
+  --state:var(--blue); --flow:#2B4C80; --fan:12s;
+}
+/* processing (yellow) · done (green) · error (red) */
+[data-state="busy"]{--state:var(--yellow);--flow:var(--blue);--fan:.6s}
+[data-state="ok"]{--state:var(--green);--flow:var(--green);--fan:3s}
+[data-state="err"]{--state:var(--red);--flow:var(--red)}
+
+*{box-sizing:border-box}
+html{background:var(--ink);color:var(--text)}
+body{margin:0;font:400 16px/1.5 var(--body)}
+:focus-visible{outline:2px solid var(--yellow);outline-offset:2px}
+
+.wrap{max-width:760px;margin:0 auto;padding:20px 20px 64px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.brand{font:800 28px/1 var(--display);letter-spacing:.02em}
+.host{font:400 13px var(--mono);color:var(--soft);overflow-wrap:anywhere;text-align:right}
+
+.hero{
+  margin-top:20px;padding:20px;border:1px solid var(--line);display:grid;gap:16px;
+  background:
+    linear-gradient(rgba(76,141,255,.09) 1px,transparent 1px) 0 0/24px 24px,
+    linear-gradient(90deg,rgba(76,141,255,.09) 1px,transparent 1px) 0 0/24px 24px,
+    var(--panel);
+}
+@media(min-width:620px){.hero{grid-template-columns:200px 1fr;align-items:center}}
+.num{display:block;font:900 clamp(72px,18vw,120px)/.9 var(--display);font-variant-numeric:tabular-nums;color:var(--text)}
+.cap{display:block;color:var(--soft);font-size:14px;margin-top:6px}
+.tick{animation:tick .5s ease-out}
+@keyframes tick{0%{color:var(--yellow);transform:translateY(-6px)}100%{color:var(--text);transform:none}}
+
+.status{margin:18px 0 8px;font-size:15px;color:var(--soft);min-height:1.5em}
+.status::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--state);margin-right:8px;transition:background .3s}
+[data-state="err"] .status{color:var(--red)}
+
+/* ===== chip board ===== */
+.board{width:100%;max-width:420px;height:auto;justify-self:end;color:var(--line);transition:color .3s}
+[data-state="busy"] .board{color:var(--soft)}
+.trace{fill:none;stroke:var(--flow);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;transition:stroke .3s}
+.node,.port{fill:var(--panel);stroke:var(--flow);stroke-width:1.4;transition:stroke .3s}
+.chip{fill:var(--panel2);stroke:var(--state);stroke-width:1.6;transition:stroke .3s}
+.pin{fill:none;stroke:var(--state);stroke-width:1.6;stroke-linecap:round;transition:stroke .3s}
+.die{fill:var(--state);fill-opacity:.14;stroke:var(--state);stroke-width:1;transition:fill .3s,stroke .3s}
+.cross{fill:none;stroke:var(--state);opacity:.18}
+.pin1{fill:var(--state)}
+.die-t{font:600 13px var(--mono);fill:var(--state);transition:fill .3s}
+.scan{fill:var(--state);opacity:0}
+[data-state="busy"] .chipg{filter:drop-shadow(0 0 5px var(--yellow))}
+[data-state="ok"] .chipg{filter:drop-shadow(0 0 5px var(--green))}
+[data-state="err"] .chipg{filter:drop-shadow(0 0 5px var(--red))}
+[data-state="busy"] .scan{opacity:.55;animation:scan .8s linear infinite alternate}
+@keyframes scan{from{transform:translateY(0)}to{transform:translateY(44px)}}
+
+/* data flow on the traces while processing */
+[data-state="busy"] .trace{stroke-dasharray:4 5;animation:flow .5s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-9}}
+
+/* fan: slow on standby, fast while processing, stopped on error */
+.housing{fill:none;stroke:var(--line);stroke-width:1.4}
+.fan path{fill:var(--state);fill-opacity:.16;stroke:var(--state);stroke-width:1.2;stroke-linejoin:round}
+.hub{fill:var(--state)}
+.fan{animation:spin var(--fan) linear infinite}
+[data-state="err"] .fan{animation-play-state:paused}
+
+/* memory */
+.frame{fill:none;stroke:var(--line);stroke-width:1.4}
+.bar{fill:var(--state);fill-opacity:.85;transform-box:fill-box;transform-origin:50% 100%;transform:scaleY(.3);transition:fill .3s}
+[data-state="busy"] .bar{animation:bar .9s ease-in-out infinite;animation-delay:calc(var(--i)*-.15s)}
+[data-state="ok"] .bar{transform:scaleY(.95)}
+@keyframes bar{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+
+/* bus lanes */
+.lane{fill:var(--green);fill-opacity:0;stroke:var(--line);stroke-width:1.2}
+[data-state="busy"] .lane{animation:lane .6s ease-in-out infinite;animation-delay:calc(var(--i)*.15s)}
+[data-state="ok"] .lane{fill-opacity:1;stroke:var(--green)}
+[data-state="err"] .lane{stroke:var(--red)}
+@keyframes lane{0%,100%{fill-opacity:0}50%{fill-opacity:1}}
+
+/* status LEDs: green = standby/done, yellow = processing, red = error */
+.led{fill:var(--panel);stroke:var(--line);stroke-width:1.2}
+[data-state="idle"] .led-g{fill:var(--green);stroke:var(--green);animation:breathe 3s ease-in-out infinite}
+[data-state="ok"] .led-g{fill:var(--green);stroke:var(--green)}
+[data-state="busy"] .led-y{fill:var(--yellow);stroke:var(--yellow)}
+[data-state="err"] .led-r{fill:var(--red);stroke:var(--red);animation:blink .6s steps(2) infinite}
+@keyframes breathe{50%{opacity:.35}}
+@keyframes blink{50%{opacity:.15}}
+
+/* ===== belt and link list ===== */
+.belt{position:relative;background:var(--ink);border-top:1px solid rgba(56,96,154,.35)}
+.belt::before{content:"";position:absolute;left:28px;top:0;bottom:0;border-left:1px dashed var(--line)}
+.packet{position:absolute;left:23px;top:0;width:10px;height:10px;background:var(--yellow);opacity:0;z-index:2}
+.list{list-style:none;margin:0;padding:0}
+.row{display:flex;border-bottom:1px solid rgba(56,96,154,.35)}
+.main{flex:1;min-width:0;display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:14px;
+  min-height:72px;padding:8px 8px 8px 0;color:inherit;text-decoration:none}
+.mech{position:relative;z-index:1;background:var(--ink);width:56px;height:56px;color:var(--line)}
+.mech svg{display:block;width:56px;height:56px}
+.txt{display:grid;min-width:0}
+.slug{font:600 17px var(--mono)}
+.file{font-size:14px;color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.copy{align-self:center;margin-left:8px;min-height:44px;padding:0 12px;background:none;
+  border:1px solid var(--line);color:var(--soft);font:600 14px var(--body);cursor:pointer}
+.copy:hover{border-color:var(--yellow);color:var(--yellow)}
+.copy{display:inline-flex;align-items:center;text-decoration:none}
+
+/* raw content viewer */
+.viewer{margin:16px 0;border:1px solid var(--line);background:var(--panel)}
+.viewer[hidden]{display:none}
+.vbar{display:flex;flex-wrap:wrap;gap:8px;justify-content:space-between;align-items:center;padding:8px 8px 8px 12px;border-bottom:1px solid var(--line)}
+.vname{font:600 14px var(--mono);overflow-wrap:anywhere}
+.vbtns{display:flex;gap:8px}
+.vbtns .copy{margin-left:0}
+.viewer pre{margin:0;padding:12px;max-height:60vh;overflow:auto;font:400 13px/1.55 var(--mono);color:var(--text);white-space:pre;tab-size:2}
+.row.run .mech,.row.run .slug{color:var(--yellow)}
+.row.done .mech,.row.done .slug{color:var(--green)}
+
+/* machine parts */
+.part{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
+  animation-play-state:paused!important}
+.run .part{animation-play-state:running!important}
+[data-state="busy"] .board .part{animation-play-state:running!important}
+.spin{transform-box:fill-box;transform-origin:center;animation:spin var(--t,2s) linear infinite;animation-direction:var(--dir,normal)}
+.slidey{animation:slidey var(--t,.9s) ease-in-out infinite}
+.slidex{animation:slidex var(--t,1.2s) linear infinite}
+.follow{animation:follow var(--t,1.4s) ease-in-out infinite}
+.dash{animation:dash .5s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slidey{0%,100%{transform:translateY(0)}50%{transform:translateY(14px)}}
+@keyframes slidex{0%{transform:translateX(-18px)}100%{transform:translateX(18px)}}
+@keyframes follow{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+@keyframes dash{to{stroke-dashoffset:-14}}
+@media(prefers-reduced-motion:reduce){
+  .part,.fan,.bar,.lane,.scan,.led,.trace{animation:none!important}
+  .tick{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <b class="brand">raw</b>
+    <span class="host" id="host"></span>
+  </header>
+
+  <section class="hero" aria-label="Summary">
+    <div><output class="num" id="total">0</output><span class="cap">total raw</span></div>
+    <svg class="board" id="board" viewBox="0 0 320 200" role="img"
+         aria-label="Chip board. Calm on standby, active when a request comes in."></svg>
+  </section>
+
+  <p class="status" id="status" role="status" aria-live="polite">Loading link list…</p>
+
+  <section class="viewer" id="viewer" hidden aria-label="Raw content">
+    <div class="vbar">
+      <span class="vname" id="vname"></span>
+      <span class="vbtns">
+        <button type="button" class="copy" id="vcopy">Copy content</button>
+        <a class="copy" id="vopen" target="_blank" rel="noopener">Original raw</a>
+      </span>
+    </div>
+    <pre id="vpre" tabindex="0"></pre>
+  </section>
+
+  <div class="belt" id="belt">
+    <span class="packet" id="packet"></span>
+    <ol class="list" id="list"></ol>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const root = document.documentElement;
+  const BASE = $('meta[name="base"]').content;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const wait = ms => new Promise(r => setTimeout(r, reduced ? Math.min(ms, 60) : ms));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+  const board = $("#board"), list = $("#list"), packet = $("#packet"), stat = $("#status"), totalEl = $("#total");
+  // Set this to your Cloudflare Worker address (no trailing slash) so the "Copy" button
+  // copies the natural raw link from the Worker. Leave empty to copy this page's link.
+  const RAW_HOST = "";
+  const READY = "Standby. Tap a link to send a request.";
+  $("#host").textContent = location.host + BASE;
+
+  // machine state: idle | busy | ok | err
+  const setState = (s, text) => { root.dataset.state = s; if (text) stat.textContent = text; };
+
+  // ---- Gears ----------------------------------------------------------
+  function gearPath(cx, cy, n, ro, ri) {
+    const step = 2 * Math.PI / n; let d = "";
+    for (let i = 0; i < n; i++) {
+      const a = i * step;
+      [[a - step*.30, ri], [a - step*.18, ro], [a + step*.18, ro], [a + step*.30, ri]].forEach(([ang, r], j) => {
+        d += (i === 0 && j === 0 ? "M" : "L") + (cx + r*Math.cos(ang)).toFixed(2) + " " + (cy + r*Math.sin(ang)).toFixed(2);
+      });
+    }
+    return d + "Z";
+  }
+  function gear(cx, cy, n, phase, t, rev) {
+    const rp = n * 3, ro = rp + 4, ri = rp - 4, rr = ri - 6; let sp = "";
+    for (let k = 0; k < 4; k++) {
+      const a = k * Math.PI / 2;
+      sp += `M${(cx+4*Math.cos(a)).toFixed(1)} ${(cy+4*Math.sin(a)).toFixed(1)}L${(cx+rr*Math.cos(a)).toFixed(1)} ${(cy+rr*Math.sin(a)).toFixed(1)}`;
+    }
+    return `<g transform="rotate(${phase} ${cx} ${cy})"><g class="part spin" style="--t:${t}s;--dir:${rev?"reverse":"normal"}">` +
+      `<path d="${gearPath(cx,cy,n,ro,ri)}"/><circle cx="${cx}" cy="${cy}" r="${rr}"/><circle cx="${cx}" cy="${cy}" r="3"/><path d="${sp}"/></g></g>`;
+  }
+
+  // ---- Chip board -----------------------------------------------------
+  function buildBoard() {
+    const xs = [122,136,150,164,178], ys = [52,66,80,94,108];
+    let pins = "", blades = "", bars = "", lanes = "";
+    xs.forEach(x => pins += `M${x} 32V40M${x} 120V128`);
+    ys.forEach(y => pins += `M102 ${y}H110M190 ${y}H198`);
+    for (let k = 0; k < 5; k++) blades += `<path d="M258 80C262 66 274 58 286 62C286 74 272 84 258 80Z" transform="rotate(${k*72} 258 80)"/>`;
+    for (let i = 0; i < 6; i++) bars += `<rect class="bar" style="--i:${i}" x="${127+i*12}" y="152" width="8" height="28"/>`;
+    for (let i = 0; i < 4; i++) lanes += `<rect class="lane" style="--i:${i}" x="${226+i*20}" y="156" width="14" height="14" rx="2"/>`;
+
+    board.innerHTML =
+      `<path class="trace" d="M22 80H102"/>` +
+      `<path class="trace" d="M102 66H62V44H30"/><path class="trace" d="M102 94H62V116H30"/>` +
+      `<path class="trace" d="M198 80H226"/>` +
+      `<path class="trace" d="M198 66H222V34H296"/><path class="trace" d="M198 94H214V126H293V156"/>` +
+      `<path class="trace" d="M136 128V146M150 128V146M164 128V146"/>` +
+      `<path class="trace" d="M136 22V32M150 22V32M164 22V32"/>` +
+      `<circle class="node" cx="30" cy="44" r="3"/><circle class="node" cx="30" cy="116" r="3"/><circle class="node" cx="296" cy="34" r="3"/>` +
+      `<rect class="port" x="6" y="72" width="16" height="16" rx="2"/>` +
+      `<g class="chipg"><rect class="chip" x="110" y="40" width="80" height="80" rx="6"/><path class="pin" d="${pins}"/>` +
+      `<rect class="die" x="126" y="56" width="48" height="48" rx="3"/>` +
+      `<path class="cross" d="M126 72H174M126 88H174M142 56V104M158 56V104"/>` +
+      `<rect class="scan" x="126" y="56" width="48" height="4"/>` +
+      `<text class="die-t" x="150" y="84" text-anchor="middle">RAW</text><circle class="pin1" cx="118" cy="48" r="1.6"/></g>` +
+      `<circle class="led led-g" cx="136" cy="16" r="5"/><circle class="led led-y" cx="150" cy="16" r="5"/><circle class="led led-r" cx="164" cy="16" r="5"/>` +
+      `<circle class="housing" cx="258" cy="80" r="32"/>` +
+      `<g class="fan" style="transform-box:view-box;transform-origin:258px 80px">${blades}<circle class="hub" cx="258" cy="80" r="5"/></g>` +
+      `<rect class="frame" x="120" y="146" width="84" height="40" rx="3"/>${bars}${lanes}` +
+      gear(44, 160, 8, 0, 1.6, false) + gear(86, 160, 6, 30, 1.2, true);
+  }
+  buildBoard();
+
+  // ---- Mechanism per file type ----------------------------------------
+  const MECH = {
+    gear: `<g class="part spin" style="--t:1.4s"><path d="${gearPath(32,32,10,20,15)}"/><circle cx="32" cy="32" r="5"/><path d="M32 27V21M32 37V43M27 32H21M37 32H43"/></g>`,
+    piston: `<rect class="part" x="22" y="6" width="20" height="32"/><g class="part slidey" style="--t:.9s"><rect x="24" y="10" width="16" height="8"/><path d="M32 18V30"/></g><g class="part spin" style="--t:.9s"><circle cx="32" cy="52" r="8"/><path d="M32 52V44"/></g>`,
+    belt: `<path class="part dash" d="M14 24H50A8 8 0 0 1 50 40H14A8 8 0 0 1 14 24Z" stroke-dasharray="4 3"/><g class="part spin" style="--t:1s"><circle cx="14" cy="32" r="4"/><path d="M14 28V36"/></g><g class="part spin" style="--t:1s"><circle cx="50" cy="32" r="4"/><path d="M50 28V36"/></g>`,
+    press: `<g class="part spin" style="--t:1.2s"><circle cx="32" cy="18" r="9"/><path d="M32 9V14"/></g><g class="part spin" style="--t:1.2s;--dir:reverse"><circle cx="32" cy="46" r="9"/><path d="M32 55V50"/></g><rect class="part slidex" x="22" y="30" width="20" height="4"/>`,
+    cam: `<g class="part follow" style="--t:1.4s"><path d="M32 6V26M26 26H38"/></g><g class="part spin" style="--t:1.4s;transform-box:view-box;transform-origin:32px 46px"><circle cx="32" cy="42" r="14"/><circle cx="32" cy="46" r="3"/></g>`
+  };
+  const KIND = {js:"gear",mjs:"gear",ts:"gear",jsx:"gear",json:"belt",yaml:"belt",yml:"belt",toml:"belt",csv:"belt",
+    py:"piston",sh:"piston",rb:"piston",go:"piston",md:"press",txt:"press",html:"press",css:"press"};
+  const kindOf = l => MECH[l.mech] ? l.mech : (KIND[(l.raw.split(".").pop() || "").toLowerCase()] || "cam");
+
+  // ---- Requests -------------------------------------------------------
+  const rows = new Map();
+  const viewer = $("#viewer"), vname = $("#vname"), vpre = $("#vpre"), vopen = $("#vopen"), vcopy = $("#vcopy");
+  vcopy.addEventListener("click", () => {
+    navigator.clipboard.writeText(vpre.textContent).then(() => {
+      vcopy.textContent = "Copied"; setTimeout(() => vcopy.textContent = "Copy content", 1500);
+    }).catch(() => setState("err", "Could not copy the content."));
+  });
+  let busy = false;
+
+  function reset() {
+    rows.forEach(r => r.classList.remove("run", "done"));
+    packet.getAnimations().forEach(a => a.cancel());
+    busy = false; viewer.hidden = true; setState("idle", READY);
+  }
+  addEventListener("pageshow", e => { if (e.persisted) reset(); });
+  addEventListener("popstate", () => location.reload());
+
+  async function fire(link, push) {
+    if (busy) return; busy = true;
+    rows.forEach(r => r.classList.remove("run", "done"));
+    const row = rows.get(link.slug), file = link.raw.split("/").pop();
+    // fetch the raw content while the animation runs
+    const pending = fetch(link.raw).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); });
+    pending.catch(() => {});
+    setState("busy", `Request /${link.slug} received.`);
+    row.scrollIntoView({block:"center", behavior: reduced ? "auto" : "smooth"});
+    await wait(350);
+    const y = row.offsetTop + row.offsetHeight / 2 - 5;
+    const a = packet.animate([{transform:"translateY(0)",opacity:1},{transform:`translateY(${y}px)`,opacity:1}],
+      {duration: reduced ? 1 : Math.min(700, 250 + y*.6), easing:"cubic-bezier(.55,0,.25,1)", fill:"forwards"});
+    await a.finished; a.cancel();
+    row.classList.add("run");
+    stat.textContent = `Processing ${file}…`;
+    await wait(800);
+    let text;
+    try { text = await pending; }
+    catch {
+      row.classList.remove("run"); busy = false;
+      setState("err", `Could not fetch ${file}. Make sure the source repository is public.`);
+      return;
+    }
+    row.classList.remove("run"); row.classList.add("done");
+    setState("ok", `Done. Showing ${file}.`);
+    if (push && location.pathname !== BASE + link.slug) history.pushState(null, "", BASE + link.slug);
+    vname.textContent = location.host + BASE + link.slug;
+    vpre.textContent = text; vopen.href = link.raw; viewer.hidden = false;
+    viewer.scrollIntoView({block:"start", behavior: reduced ? "auto" : "smooth"});
+    busy = false;
+    await wait(1500);
+    if (!busy && root.dataset.state === "ok") setState("idle", `${file} shown. Tap another link for the next request.`);
+  }
+
+  // ---- Load links -----------------------------------------------------
+  (async () => {
+    let links = [];
+    try {
+      const r = await fetch(BASE + "links.json", {cache:"no-cache"});
+      links = (await r.json()).links || [];
+    } catch { setState("err", "links.json could not be loaded. Check the file name and its contents."); return; }
+
+    links = links.filter(l => l && /^[\w.-]+$/.test(l.slug) && String(l.raw).startsWith("https://raw.githubusercontent.com/"));
+    totalEl.textContent = links.length.toLocaleString("en-US"); totalEl.classList.add("tick");
+
+    links.forEach(l => {
+      const li = document.createElement("li");
+      li.className = "row"; li.dataset.slug = l.slug;
+      li.innerHTML =
+        `<a class="main" href="${esc(l.raw)}"><span class="mech" aria-hidden="true"><svg viewBox="0 0 64 64">${MECH[kindOf(l)]}</svg></span>` +
+        `<span class="txt"><span class="slug">/${esc(l.slug)}</span><span class="file">${esc(l.raw.split("/").pop())}</span></span></a>` +
+        `<button class="copy" type="button" data-slug="${esc(l.slug)}">Copy</button>`;
+      list.appendChild(li); rows.set(l.slug, li);
+    });
+    if (!links.length) { setState("idle", "No links yet. Add some to links.json."); return; }
+
+    list.addEventListener("click", e => {
+      const btn = e.target.closest(".copy");
+      if (btn) {
+        navigator.clipboard.writeText(RAW_HOST ? RAW_HOST.replace(/\/+$/, "") + "/" + btn.dataset.slug : location.origin + BASE + btn.dataset.slug).then(() => {
+          btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1500);
+        }).catch(() => setState("err", "Could not copy. Copy it manually from the address bar."));
+        return;
+      }
+      const a = e.target.closest("a.main");
+      if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+      e.preventDefault();
+      fire(links.find(l => l.slug === a.closest(".row").dataset.slug), true);
+    });
+
+    // routing: /raw/<slug> or ?r=<slug>
+    let slug = "";
+    if (location.pathname.startsWith(BASE)) slug = decodeURIComponent(location.pathname.slice(BASE.length)).replace(/\/+$/, "");
+    else slug = new URLSearchParams(location.search).get("r") || "";
+    if (slug === "index.html") slug = "";
+
+    if (slug) {
+      const link = links.find(l => l.slug === slug);
+      if (link) fire(link);
+      else setState("err", `Link /${slug} does not exist. Pick one from the list below.`);
+    } else setState("idle", READY);
+  })();
+})();
+</script>
+</body>
+</html>
