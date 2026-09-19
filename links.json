@@ -1,0 +1,9 @@
+{
+  "links": [
+    { "slug": "app",    "raw": "https://raw.githubusercontent.com/USERNAME/REPO/main/app.js" },
+    { "slug": "config", "raw": "https://raw.githubusercontent.com/USERNAME/REPO/main/config.json" },
+    { "slug": "bot",    "raw": "https://raw.githubusercontent.com/USERNAME/REPO/main/bot.py" },
+    { "slug": "notes",  "raw": "https://raw.githubusercontent.com/USERNAME/REPO/main/README.md" },
+    { "slug": "data",   "raw": "https://raw.githubusercontent.com/USERNAME/REPO/main/data.bin", "mech": "cam" }
+  ]
+}
