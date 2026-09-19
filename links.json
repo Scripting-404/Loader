@@ -1,0 +1,14 @@
+{
+  "links": [
+    {
+      "slug": "Guess-the-Slapper",
+      "raw": "https://raw.githubusercontent.com/Scripting-404/Script/refs/heads/main/Guess-the-Slapper",
+      "mech": "gear"
+    },
+    {
+      "slug": "test",
+      "raw": "https://raw.githubusercontent.com/Scripting-404/Script/refs/heads/main/test",
+      "mech": "piston"
+    }
+  ]
+}
